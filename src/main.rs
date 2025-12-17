@@ -11,6 +11,6 @@ fn main() {
         .expect("Unable to read user input");
     let cmd = input.trim();
     if !cmd.is_empty() {
-        print!("Command not found: {cmd}");
+        print!("{cmd}: command not found");
     }
 }
