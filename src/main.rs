@@ -42,6 +42,6 @@ fn is_type(cmds: Vec<&str>) {
         println!("{cmd} is a shell builtin");
     } else {
         let cmd = cmds[0];
-        println!("{cmd}: command not found");
+        println!("{cmd}: not found");
     }
 }
