@@ -11,7 +11,9 @@ fn main() {
             .read_line(&mut input)
             .expect("Unable to read user input");
         let cmd = input.trim();
-        if !cmd.is_empty() {
+        if cmd == "exit" {
+            break;
+        } else if !cmd.is_empty() {
             println!("{cmd}: command not found");
         }
     }
