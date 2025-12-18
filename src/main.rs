@@ -10,11 +10,13 @@ fn main() {
         stdin()
             .read_line(&mut input)
             .expect("Unable to read user input");
-        let cmd = input.trim();
-        if cmd == "exit" {
-            break;
-        } else if !cmd.is_empty() {
-            println!("{cmd}: command not found");
+
+        let (cmd, args) = input.trim().split_once(char::is_whitespace).unwrap();
+
+        match cmd {
+            "exit" => break,
+            "echo" => println!("{}", args),
+            _ => println!("{cmd}: command not found"),
         }
     }
 }
