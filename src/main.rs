@@ -12,7 +12,7 @@ fn main() {
             .expect("Unable to read user input");
         let cmd = input.trim();
         if !cmd.is_empty() {
-            print!("{cmd}: command not found");
+            println!("{cmd}: command not found");
         }
     }
 }
