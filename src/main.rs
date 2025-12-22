@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env::{split_paths, var_os},
     fs::read_dir,
     io::{self, Write, stdin},
     os::unix::fs::PermissionsExt,
@@ -58,11 +58,10 @@ fn has_type(cmds: Vec<&str>) {
 
 fn find_in_path(cmd: &str) -> Option<PathBuf> {
     let path_cmd = format!("{cmd}");
-    env::var_os("PATH")
+    var_os("PATH")
         .and_then(|path_var| path_var.into_string().ok())
         .and_then(|path| {
-            let greedy_path = path.split(":").collect::<Vec<&str>>().into_iter().rev();
-            for dir in greedy_path {
+            for dir in split_paths(&path) {
                 if let Ok(dir_entries) = read_dir(dir) {
                     for dir_entry in dir_entries.flat_map(|d| d) {
                         if dir_entry.path().ends_with(&path_cmd) {
