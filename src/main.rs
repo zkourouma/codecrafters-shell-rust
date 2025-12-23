@@ -1,6 +1,6 @@
 use std::{
-    env::{split_paths, var_os},
-    fs::read_dir,
+    env::{split_paths, var},
+    fs,
     io::{self, Write, stdin},
     os::unix::fs::PermissionsExt,
     path::PathBuf,
@@ -57,23 +57,14 @@ fn has_type(cmds: Vec<&str>) {
 }
 
 fn find_in_path(cmd: &str) -> Option<PathBuf> {
-    let path_cmd = format!("{cmd}");
-    var_os("PATH")
-        .and_then(|path_var| path_var.into_string().ok())
-        .and_then(|path| {
-            for dir in split_paths(&path) {
-                if let Ok(dir_entries) = read_dir(dir) {
-                    for dir_entry in dir_entries.flat_map(|d| d) {
-                        if dir_entry.path().ends_with(&path_cmd) {
-                            if let Ok(metadata) = dir_entry.metadata() {
-                                if metadata.permissions().mode() & 0x111 != 0 {
-                                    return Some(dir_entry.path());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            None
-        })
+    var("PATH").ok().and_then(|path| {
+        split_paths(&path)
+            .map(|dir| dir.join(cmd))
+            .find(|candidate| {
+                candidate.exists()
+                    && fs::metadata(candidate)
+                        .map(|metadata| metadata.permissions().mode() & 0o111 != 0)
+                        .unwrap_or_default()
+            })
+    })
 }
