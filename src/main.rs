@@ -1,9 +1,10 @@
 use std::{
     env::{split_paths, var},
     fs,
-    io::{self, Write, stdin},
+    io::{Write, stderr, stdin, stdout},
     os::unix::fs::PermissionsExt,
     path::PathBuf,
+    process::Command,
 };
 
 const BUILTINS: &[&str; 3] = &["exit", "echo", "type"];
@@ -11,7 +12,7 @@ const BUILTINS: &[&str; 3] = &["exit", "echo", "type"];
 fn main() {
     loop {
         print!("$ ");
-        io::stdout().flush().unwrap();
+        stdout().flush().unwrap();
 
         let mut input = String::new();
 
@@ -25,8 +26,23 @@ fn main() {
             "exit" => break,
             "echo" => println!("{}", args.join(" ")),
             "type" => has_type(args),
-            _ => println!("{cmd}: command not found"),
+            _ => try_cmd(cmd, args),
         }
+    }
+}
+
+fn try_cmd(cmd: &str, args: Vec<&str>) {
+    if find_in_path(cmd).is_some() {
+        let _ = Command::new(cmd)
+            .args(&args)
+            .output()
+            .map(|output| {
+                stdout().write(&output.stdout)?;
+                stderr().write(&output.stderr)
+            })
+            .map_err(|e| eprintln!("{}", &e));
+    } else {
+        println!("{cmd}: command not found");
     }
 }
 
