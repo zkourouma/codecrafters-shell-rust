@@ -1,13 +1,13 @@
 use std::{
-    env::{current_dir, split_paths, var},
+    env::{current_dir, set_current_dir, split_paths, var},
     fs,
     io::{Write, stderr, stdin, stdout},
     os::unix::fs::PermissionsExt,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
 };
 
-const BUILTINS: &[&str; 4] = &["echo", "exit", "pwd", "type"];
+const BUILTINS: &[&str; 5] = &["cd", "echo", "exit", "pwd", "type"];
 
 fn main() {
     loop {
@@ -24,15 +24,29 @@ fn main() {
 
         match cmd {
             "exit" => break,
+            "cd" => try_change_dir(args.first()),
+            "echo" => println!("{}", args.join(" ")),
             "pwd" => {
                 current_dir()
                     .map(|d| println!("{}", d.to_string_lossy()))
                     .ok();
             }
-            "echo" => println!("{}", args.join(" ")),
             "type" => has_type(args),
             _ => try_cmd(cmd, args),
         }
+    }
+}
+
+fn try_change_dir(arg: Option<&&str>) {
+    if let Some(dir) = arg {
+        let path = Path::new(dir);
+        if path.is_dir() {
+            set_current_dir(path).ok();
+        } else {
+            println!("cd: {dir}: No such file or directory");
+        }
+    } else {
+        println!("change to home dir");
     }
 }
 
