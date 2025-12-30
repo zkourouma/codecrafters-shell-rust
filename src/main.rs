@@ -1,5 +1,5 @@
 use std::{
-    env::{split_paths, var},
+    env::{current_dir, split_paths, var},
     fs,
     io::{Write, stderr, stdin, stdout},
     os::unix::fs::PermissionsExt,
@@ -24,6 +24,11 @@ fn main() {
 
         match cmd {
             "exit" => break,
+            "pwd" => {
+                current_dir()
+                    .map(|d| println!("{}", d.to_string_lossy()))
+                    .ok();
+            }
             "echo" => println!("{}", args.join(" ")),
             "type" => has_type(args),
             _ => try_cmd(cmd, args),
