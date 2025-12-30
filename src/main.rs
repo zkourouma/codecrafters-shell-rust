@@ -7,7 +7,7 @@ use std::{
     process::Command,
 };
 
-const BUILTINS: &[&str; 3] = &["exit", "echo", "type"];
+const BUILTINS: &[&str; 4] = &["echo", "exit", "pwd", "type"];
 
 fn main() {
     loop {
