@@ -23,31 +23,39 @@ fn main() {
         let (cmd, args) = parse_cmd(&input);
 
         match cmd {
-            "exit" => break,
-            "cd" => try_change_dir(args.first()),
+            "cd" => try_change_dir(args.first().map(|arg| *arg)),
             "echo" => println!("{}", args.join(" ")),
+            "exit" => break,
             "pwd" => {
                 current_dir()
                     .map(|d| println!("{}", d.to_string_lossy()))
                     .ok();
             }
-            "type" => has_type(args),
+            "type" => has_type(args.first().map(|arg| *arg)),
             _ => try_cmd(cmd, args),
         }
     }
 }
 
-fn try_change_dir(arg: Option<&&str>) {
-    if let Some(dir) = arg {
-        let path = Path::new(dir);
-        if path.is_dir() {
-            set_current_dir(path).ok();
-        } else {
-            println!("cd: {dir}: No such file or directory");
+fn try_change_dir(arg: Option<&str>) {
+    match arg {
+        Some("~") => change_to_home_dir(),
+        Some(dir) => {
+            let path = Path::new(dir);
+            if path.is_dir() {
+                set_current_dir(path).ok();
+            } else {
+                println!("cd: {dir}: No such file or directory");
+            }
         }
-    } else {
-        println!("change to home dir");
-    }
+        None => change_to_home_dir(),
+    };
+}
+
+fn change_to_home_dir() {
+    let home = var("HOME").unwrap_or_default();
+    let path = Path::new(home.as_str());
+    set_current_dir(path).ok();
 }
 
 fn try_cmd(cmd: &str, args: Vec<&str>) {
@@ -75,19 +83,18 @@ fn parse_cmd<'a>(input: &'a str) -> (&'a str, Vec<&'a str>) {
     }
 }
 
-fn has_type(cmds: Vec<&str>) {
-    if cmds.len() < 1 {
-        println!("command not found");
-    } else if BUILTINS.contains(&cmds[0]) {
-        let cmd = cmds[0];
-        println!("{cmd} is a shell builtin");
-    } else if let Some(executable) = find_in_path(cmds[0]) {
-        let cmd = cmds[0];
-        let exec_path = executable.to_str().unwrap_or_default();
-        println!("{cmd} is {exec_path}");
+fn has_type(cmd: Option<&str>) {
+    if let Some(cmd) = cmd {
+        if BUILTINS.contains(&cmd) {
+            println!("{cmd} is a shell builtin");
+        } else if let Some(executable) = find_in_path(cmd) {
+            let exec_path = executable.to_str().unwrap_or_default();
+            println!("{cmd} is {exec_path}");
+        } else {
+            println!("{cmd}: not found");
+        }
     } else {
-        let cmd = cmds[0];
-        println!("{cmd}: not found");
+        println!("No command to type");
     }
 }
 
