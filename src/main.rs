@@ -23,7 +23,7 @@ fn main() {
         let (cmd, args) = parse_cmd(&input);
 
         match cmd {
-            "cd" => try_change_dir(args.first().map(|arg| *arg)),
+            "cd" => try_change_dir(args.first().map(|arg| arg.as_str())),
             "echo" => println!("{}", args.join(" ")),
             "exit" => break,
             "pwd" => {
@@ -31,7 +31,7 @@ fn main() {
                     .map(|d| println!("{}", d.to_string_lossy()))
                     .ok();
             }
-            "type" => has_type(args.first().map(|arg| *arg)),
+            "type" => has_type(args.first().map(|arg| arg.as_str())),
             _ => try_cmd(cmd, args),
         }
     }
@@ -58,7 +58,7 @@ fn change_to_home_dir() {
     set_current_dir(path).ok();
 }
 
-fn try_cmd(cmd: &str, args: Vec<&str>) {
+fn try_cmd(cmd: &str, args: Vec<String>) {
     if find_in_path(cmd).is_some() {
         let _ = Command::new(cmd)
             .args(&args)
@@ -73,14 +73,46 @@ fn try_cmd(cmd: &str, args: Vec<&str>) {
     }
 }
 
-fn parse_cmd<'a>(input: &'a str) -> (&'a str, Vec<&'a str>) {
-    let inputs = input.trim().split(" ").collect::<Vec<&str>>().split_off(0);
-
-    if inputs.len() < 2 {
-        (inputs[0], Vec::new())
+fn parse_cmd<'a>(input: &'a str) -> (&'a str, Vec<String>) {
+    if let Some((cmd, args)) = input.trim().split_once(" ") {
+        let escaped_args = escape_args(args);
+        (cmd, escaped_args)
     } else {
-        (inputs[0], inputs[1..].to_vec())
+        (input.trim(), Vec::new())
     }
+}
+
+fn escape_args(inputs: &str) -> Vec<String> {
+    if !inputs.contains('\'') {
+        return inputs.split_whitespace().map(|s| s.to_string()).collect();
+    }
+
+    let mut args = Vec::new();
+    let mut arg_buffer = String::new();
+    let mut in_quotes = false;
+
+    for ch in inputs.chars() {
+        match ch {
+            '\'' => {
+                in_quotes = !in_quotes;
+            }
+            ' ' | '\t' | '\n' | '\r' if !in_quotes => {
+                if !arg_buffer.is_empty() {
+                    args.push(arg_buffer.clone());
+                    arg_buffer.clear();
+                }
+            }
+            _ => {
+                arg_buffer.push(ch);
+            }
+        }
+    }
+
+    if !arg_buffer.is_empty() {
+        args.push(arg_buffer);
+    }
+
+    args
 }
 
 fn has_type(cmd: Option<&str>) {
