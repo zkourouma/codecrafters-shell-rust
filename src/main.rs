@@ -83,20 +83,24 @@ fn parse_cmd<'a>(input: &'a str) -> (&'a str, Vec<String>) {
 }
 
 fn escape_args(inputs: &str) -> Vec<String> {
-    if !inputs.contains('\'') {
+    if !inputs.contains('\'') && !inputs.contains('\"') {
         return inputs.split_whitespace().map(|s| s.to_string()).collect();
     }
 
     let mut args = Vec::new();
     let mut arg_buffer = String::new();
-    let mut in_quotes = false;
+    let mut in_single_quotes = false;
+    let mut in_double_quotes = false;
 
     for ch in inputs.chars() {
         match ch {
-            '\'' => {
-                in_quotes = !in_quotes;
+            '\'' if !in_double_quotes => {
+                in_single_quotes = !in_single_quotes;
             }
-            ' ' | '\t' | '\n' | '\r' if !in_quotes => {
+            '\"' if !in_single_quotes => {
+                in_double_quotes = !in_double_quotes;
+            }
+            ' ' | '\t' | '\n' | '\r' if !in_single_quotes && !in_double_quotes => {
                 if !arg_buffer.is_empty() {
                     args.push(arg_buffer.clone());
                     arg_buffer.clear();
